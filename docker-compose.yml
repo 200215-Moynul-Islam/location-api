@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: location-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: location_db
+      POSTGRES_USER: location_user
+      POSTGRES_PASSWORD: your_password
+
+    ports:
+      - "5434:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
