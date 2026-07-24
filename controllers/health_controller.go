@@ -1,15 +1,14 @@
 package controllers
 
-import beego "github.com/beego/beego/v2/server/web"
+import (
+	"location-api/utils"
+	"net/http"
+)
 
 type HealthController struct {
-	beego.Controller
+	BaseController
 }
 
 func (c *HealthController) Get() {
-	c.Data["json"] = map[string]string{
-		"status": "ok",
-	}
-
-	c.ServeJSON()
+	utils.SendJSONResponse(c.Ctx, http.StatusOK, true, "Server is running.", nil)
 }
