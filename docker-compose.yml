@@ -1,10 +1,30 @@
 version: "3.9"
 
 services:
+  migrate:
+    image: migrate/migrate
+    container_name: location-migrate
+
+    volumes:
+      - ./migrations:/migrations
+
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://location_user:your_password@postgres:5432/location_db?sslmode=disable",
+        "up",
+      ]
+
+    depends_on:
+      - postgres
+
+    restart: "no"
+
   postgres:
     image: postgres:17
     container_name: location-postgres
-    restart: unless-stopped
 
     environment:
       POSTGRES_DB: location_db
@@ -16,6 +36,8 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+    restart: unless-stopped
 
 volumes:
   postgres_data:

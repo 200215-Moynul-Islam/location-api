@@ -8,6 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.0
 	github.com/beego/beego/v2 v2.1.0
+	github.com/lib/pq v1.10.5
 )
 
 require (
