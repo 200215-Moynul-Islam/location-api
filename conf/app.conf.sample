@@ -4,3 +4,10 @@ runmode = dev
 autorender = false
 copyrequestbody = true
 EnableDocs = true
+
+# MinIO Config
+MINIO_ENDPOINT=
+MINIO_REGION=
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
+MINIO_BUCKET=
