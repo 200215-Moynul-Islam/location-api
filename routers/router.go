@@ -8,4 +8,10 @@ import (
 
 func init() {
 	beego.Router("/health", &controllers.HealthController{})
+
+	beego.Router(
+		"/locations/:id/base-image",
+		&controllers.LocationController{},
+		"get:GetBaseImage",
+	)
 }

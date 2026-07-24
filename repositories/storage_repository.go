@@ -5,12 +5,11 @@ import (
 
 	"location-api/utils"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 type StorageRepository interface {
-	ListLocationFolders(ctx context.Context) ([]string, error)
+	GetObject(ctx context.Context, objectKey string) (*s3.GetObjectOutput, error)
 }
 
 type storageRepository struct {
@@ -25,23 +24,15 @@ func NewStorageRepository(client *s3.Client) StorageRepository {
 	}
 }
 
-func (repository *storageRepository) ListLocationFolders(ctx context.Context) ([]string, error) {
-	output, err := repository.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-		Bucket:    &repository.bucket,
-		Delimiter: aws.String("/"),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	folders := make([]string, 0, len(output.CommonPrefixes))
-
-	for _, prefix := range output.CommonPrefixes {
-		if prefix.Prefix != nil {
-			folders = append(folders, *prefix.Prefix)
-		}
-	}
-
-	return folders, nil
+func (repository *storageRepository) GetObject(
+	ctx context.Context,
+	objectKey string,
+) (*s3.GetObjectOutput, error) {
+	return repository.client.GetObject(
+		ctx,
+		&s3.GetObjectInput{
+			Bucket: &repository.bucket,
+			Key:    &objectKey,
+		},
+	)
 }
