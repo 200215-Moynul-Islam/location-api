@@ -21,67 +21,31 @@ type LocationController struct {
 func (controller *LocationController) GetLocationImages() {
 	locationID, err := strconv.Atoi(controller.Ctx.Input.Param(":id"))
 	if err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusBadRequest,
-			false,
-			"Invalid location id",
-			nil,
-		)
+		controller.sendBadRequestResponse("Invalid location id")
 		return
 	}
 
 	ctx := context.Background()
 
-	s3Client, err := utils.NewMinIOS3Client(ctx)
+	locationService, err := controller.newLocationService(ctx)
 	if err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusInternalServerError,
-			false,
-			"Failed to initialize MinIO client",
-			nil,
-		)
+		controller.sendInternalServerErrorResponse()
 		return
 	}
-
-	locationRepository := repositories.NewLocationRepository()
-	locationImageRepository := repositories.NewLocationImageRepository()
-	storageRepository := repositories.NewStorageRepository(s3Client)
-
-	locationService := services.NewLocationService(
-		locationRepository,
-		locationImageRepository,
-		storageRepository,
-	)
 
 	locationImages, err := locationService.GetLocationImages(ctx, locationID)
 	if err != nil {
 		if errors.Is(err, services.ErrLocationNotFound) {
-			utils.SendJSONResponse(
-				controller.Ctx,
-				http.StatusNotFound,
-				false,
-				"Location not found",
-				nil,
-			)
+			controller.sendNotFoundResponse("Location not found")
 			return
 		}
 
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusInternalServerError,
-			false,
-			"Internal server error",
-			nil,
-		)
+		controller.sendInternalServerErrorResponse()
 		return
 	}
 
-	utils.SendJSONResponse(
-		controller.Ctx,
+	controller.sendSuccessResponse(
 		http.StatusOK,
-		true,
 		"Location images retrieved successfully",
 		locationImages,
 	)
@@ -90,44 +54,20 @@ func (controller *LocationController) GetLocationImages() {
 func (controller *LocationController) GetLocations() {
 	ctx := context.Background()
 
-	s3Client, err := utils.NewMinIOS3Client(ctx)
+	locationService, err := controller.newLocationService(ctx)
 	if err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusInternalServerError,
-			false,
-			"Failed to initialize MinIO client",
-			nil,
-		)
+		controller.sendInternalServerErrorResponse()
 		return
 	}
-
-	locationRepository := repositories.NewLocationRepository()
-	locationImageRepository := repositories.NewLocationImageRepository()
-	storageRepository := repositories.NewStorageRepository(s3Client)
-
-	locationService := services.NewLocationService(
-		locationRepository,
-		locationImageRepository,
-		storageRepository,
-	)
 
 	locations, err := locationService.GetLocations(ctx)
 	if err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusInternalServerError,
-			false,
-			"Internal server error",
-			nil,
-		)
+		controller.sendInternalServerErrorResponse()
 		return
 	}
 
-	utils.SendJSONResponse(
-		controller.Ctx,
+	controller.sendSuccessResponse(
 		http.StatusOK,
-		true,
 		"Locations retrieved successfully",
 		locations,
 	)
@@ -136,52 +76,24 @@ func (controller *LocationController) GetLocations() {
 func (controller *LocationController) UpdateBaseImage() {
 	locationID, err := strconv.Atoi(controller.Ctx.Input.Param(":id"))
 	if err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusBadRequest,
-			false,
-			"Invalid location id",
-			nil,
-		)
+		controller.sendBadRequestResponse("Invalid location id")
 		return
 	}
 
 	var request dtos.UpdateBaseImageRequest
 
 	if err := json.Unmarshal(controller.Ctx.Input.RequestBody, &request); err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusBadRequest,
-			false,
-			"Invalid request body",
-			nil,
-		)
+		controller.sendBadRequestResponse("Invalid request body")
 		return
 	}
 
 	ctx := context.Background()
 
-	s3Client, err := utils.NewMinIOS3Client(ctx)
+	locationService, err := controller.newLocationService(ctx)
 	if err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusInternalServerError,
-			false,
-			"Failed to initialize MinIO client",
-			nil,
-		)
+		controller.sendInternalServerErrorResponse()
 		return
 	}
-
-	locationRepository := repositories.NewLocationRepository()
-	locationImageRepository := repositories.NewLocationImageRepository()
-	storageRepository := repositories.NewStorageRepository(s3Client)
-
-	locationService := services.NewLocationService(
-		locationRepository,
-		locationImageRepository,
-		storageRepository,
-	)
 
 	err = locationService.UpdateBaseImage(
 		ctx,
@@ -189,21 +101,30 @@ func (controller *LocationController) UpdateBaseImage() {
 		request.LocationImageID,
 	)
 	if err != nil {
-		utils.SendJSONResponse(
-			controller.Ctx,
-			http.StatusInternalServerError,
-			false,
-			"Failed to update base image",
-			nil,
-		)
+		controller.sendInternalServerErrorResponse()
 		return
 	}
 
-	utils.SendJSONResponse(
-		controller.Ctx,
+	controller.sendSuccessResponse(
 		http.StatusOK,
-		true,
 		"Base image updated successfully",
 		nil,
 	)
+}
+
+func (controller *LocationController) newLocationService(ctx context.Context) (services.LocationService, error) {
+	s3Client, err := utils.NewMinIOS3Client(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	locationRepository := repositories.NewLocationRepository()
+	locationImageRepository := repositories.NewLocationImageRepository()
+	storageRepository := repositories.NewStorageRepository(s3Client)
+
+	return services.NewLocationService(
+		locationRepository,
+		locationImageRepository,
+		storageRepository,
+	), nil
 }
