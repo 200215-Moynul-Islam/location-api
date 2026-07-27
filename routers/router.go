@@ -13,6 +13,11 @@ func init() {
 			&controllers.HealthController{},
 		),
 		beego.NSRouter(
+			"/locations",
+			&controllers.LocationController{},
+			"get:GetLocations",
+		),
+		beego.NSRouter(
 			"/locations/:id/base-image",
 			&controllers.LocationController{},
 			"get:GetBaseImage",

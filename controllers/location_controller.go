@@ -154,3 +154,49 @@ func (controller *LocationController) GetLocationImages() {
 		locationImages,
 	)
 }
+
+func (controller *LocationController) GetLocations() {
+	ctx := context.Background()
+
+	s3Client, err := utils.NewMinIOS3Client(ctx)
+	if err != nil {
+		utils.SendJSONResponse(
+			controller.Ctx,
+			http.StatusInternalServerError,
+			false,
+			"Failed to initialize MinIO client",
+			nil,
+		)
+		return
+	}
+
+	locationRepository := repositories.NewLocationRepository()
+	locationImageRepository := repositories.NewLocationImageRepository()
+	storageRepository := repositories.NewStorageRepository(s3Client)
+
+	locationService := services.NewLocationService(
+		locationRepository,
+		locationImageRepository,
+		storageRepository,
+	)
+
+	locations, err := locationService.GetLocations()
+	if err != nil {
+		utils.SendJSONResponse(
+			controller.Ctx,
+			http.StatusInternalServerError,
+			false,
+			"Internal server error",
+			nil,
+		)
+		return
+	}
+
+	utils.SendJSONResponse(
+		controller.Ctx,
+		http.StatusOK,
+		true,
+		"Locations retrieved successfully",
+		locations,
+	)
+}

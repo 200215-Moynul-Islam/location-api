@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"location-api/dtos"
 	"location-api/repositories"
@@ -16,6 +17,7 @@ var ErrLocationNotFound = errors.New("location not found")
 type LocationService interface {
 	GetBaseImage(ctx context.Context, id int) (*s3.GetObjectOutput, error)
 	GetLocationImages(locationID int) ([]dtos.LocationImageResponse, error)
+	GetLocations() ([]dtos.LocationResponse, error)
 }
 
 type locationService struct {
@@ -72,9 +74,30 @@ func (service *locationService) GetLocationImages(locationID int) ([]dtos.Locati
 	for _, locationImage := range locationImages {
 		response = append(response, dtos.LocationImageResponse{
 			ID:       locationImage.ID,
-			ImageURL: locationImage.ImageKey,
+			ImageURL: fmt.Sprintf("/api/v1/location-images/%d", locationImage.ID),
 		})
 	}
 
 	return response, nil
+}
+
+func (service *locationService) GetLocations() ([]dtos.LocationResponse, error) {
+	locations, err := service.locationRepository.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	responses := make([]dtos.LocationResponse, 0)
+
+	for _, location := range locations {
+		responses = append(responses, dtos.LocationResponse{
+			ID:      location.ID,
+			Country: location.Country,
+			State:   location.State,
+			City:    location.City,
+			BaseImageURL: fmt.Sprintf("/api/v1/locations/%d/base-image", location.ID),
+		})
+	}
+
+	return responses, nil
 }
