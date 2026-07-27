@@ -19,6 +19,7 @@ type LocationService interface {
 	GetLocationImages(locationID int) ([]dtos.LocationImageResponse, error)
 	GetLocations() ([]dtos.LocationResponse, error)
 	GetLocationImage(ctx context.Context, id int) (*s3.GetObjectOutput, error)
+	UpdateBaseImage(ctx context.Context, locationID int, locationImageID int) error
 }
 
 type locationService struct {
@@ -119,5 +120,31 @@ func (service *locationService) GetLocationImage(
 	return service.storageRepository.GetObject(
 		ctx,
 		locationImage.ImageKey,
+	)
+}
+
+func (service *locationService) UpdateBaseImage(
+	ctx context.Context,
+	locationID int,
+	locationImageID int,
+) error {
+	location, err := service.locationRepository.GetByID(locationID)
+	if err != nil {
+		return err
+	}
+
+	locationImage, err := service.locationImageRepository.GetByID(locationImageID)
+	if err != nil {
+		return err
+	}
+
+	if locationImage.Location.ID != location.ID {
+		return errors.New("image does not belong to location")
+	}
+
+	return service.storageRepository.CopyObject(
+		ctx,
+		locationImage.ImageKey,
+		location.BaseImageKey,
 	)
 }

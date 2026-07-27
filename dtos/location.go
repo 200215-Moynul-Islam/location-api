@@ -7,3 +7,12 @@ type LocationResponse struct {
 	City           string `json:"city"`
 	BaseImageURL   string `json:"baseImageUrl"`
 }
+
+type LocationImageResponse struct {
+	ID       int    `json:"id"`
+	ImageURL string `json:"imageUrl"`
+}
+
+type UpdateBaseImageRequest struct {
+	LocationImageID int `json:"locationImageId"`
+}

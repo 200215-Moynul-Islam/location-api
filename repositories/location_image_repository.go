@@ -47,5 +47,10 @@ func (repository *locationImageRepository) GetByID(id int) (*models.LocationImag
 		return nil, err
 	}
 
+	_, err = repository.ormInstance.LoadRelated(locationImage, "Location")
+	if err != nil {
+		return nil, err
+	}
+
 	return locationImage, nil
 }

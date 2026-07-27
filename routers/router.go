@@ -20,7 +20,7 @@ func init() {
 		beego.NSRouter(
 			"/locations/:id/base-image",
 			&controllers.LocationController{},
-			"get:GetBaseImage",
+			"get:GetBaseImage;put:UpdateBaseImage",
 		),
 		beego.NSRouter(
 			"/locations/:id/images",

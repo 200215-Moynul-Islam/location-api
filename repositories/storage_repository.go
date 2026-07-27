@@ -5,11 +5,13 @@ import (
 
 	"location-api/utils"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 type StorageRepository interface {
 	GetObject(ctx context.Context, objectKey string) (*s3.GetObjectOutput, error)
+	CopyObject(ctx context.Context, sourceKey string, destinationKey string) error
 }
 
 type storageRepository struct {
@@ -35,4 +37,21 @@ func (repository *storageRepository) GetObject(
 			Key:    &objectKey,
 		},
 	)
+}
+
+func (repository *storageRepository) CopyObject(
+	ctx context.Context,
+	sourceKey string,
+	destinationKey string,
+) error {
+	_, err := repository.client.CopyObject(
+		ctx,
+		&s3.CopyObjectInput{
+			Bucket:     &repository.bucket,
+			Key:        &destinationKey,
+			CopySource: aws.String(repository.bucket + "/" + sourceKey),
+		},
+	)
+
+	return err
 }
