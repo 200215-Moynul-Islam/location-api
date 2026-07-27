@@ -7,11 +7,22 @@ import (
 )
 
 func init() {
-	beego.Router("/health", &controllers.HealthController{})
-
-	beego.Router(
-		"/locations/:id/base-image",
-		&controllers.LocationController{},
-		"get:GetBaseImage",
+	api := beego.NewNamespace("/api/v1",
+		beego.NSRouter(
+			"/health",
+			&controllers.HealthController{},
+		),
+		beego.NSRouter(
+			"/locations/:id/base-image",
+			&controllers.LocationController{},
+			"get:GetBaseImage",
+		),
+		beego.NSRouter(
+			"/locations/:id/images",
+			&controllers.LocationController{},
+			"get:GetLocationImages",
+		),
 	)
+
+	beego.AddNamespace(api)
 }
