@@ -3,29 +3,25 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"location-api/dtos"
 	"location-api/repositories"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/beego/beego/v2/client/orm"
 )
 
 var ErrLocationNotFound = errors.New("location not found")
 
 type LocationService interface {
-	GetBaseImage(ctx context.Context, id int) (*s3.GetObjectOutput, error)
-	GetLocationImages(locationID int) ([]dtos.LocationImageResponse, error)
-	GetLocations() ([]dtos.LocationResponse, error)
-	GetLocationImage(ctx context.Context, id int) (*s3.GetObjectOutput, error)
+	GetLocationImages(ctx context.Context, locationID int) ([]dtos.LocationImageResponse, error)
+	GetLocations(ctx context.Context) ([]dtos.LocationResponse, error)
 	UpdateBaseImage(ctx context.Context, locationID int, locationImageID int) error
 }
 
 type locationService struct {
-	locationRepository repositories.LocationRepository
+	locationRepository      repositories.LocationRepository
 	locationImageRepository repositories.LocationImageRepository
-	storageRepository  repositories.StorageRepository
+	storageRepository       repositories.StorageRepository
 }
 
 func NewLocationService(
@@ -34,29 +30,13 @@ func NewLocationService(
 	storageRepository repositories.StorageRepository,
 ) LocationService {
 	return &locationService{
-		locationRepository: locationRepository,
+		locationRepository:      locationRepository,
 		locationImageRepository: locationImageRepository,
-		storageRepository:  storageRepository,
+		storageRepository:       storageRepository,
 	}
 }
 
-func (service *locationService) GetBaseImage(
-	ctx context.Context,
-	id int,
-) (*s3.GetObjectOutput, error) {
-
-	location, err := service.locationRepository.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return service.storageRepository.GetObject(
-		ctx,
-		location.BaseImageKey,
-	)
-}
-
-func (service *locationService) GetLocationImages(locationID int) ([]dtos.LocationImageResponse, error) {
+func (service *locationService) GetLocationImages(ctx context.Context, locationID int) ([]dtos.LocationImageResponse, error) {
 	_, err := service.locationRepository.GetByID(locationID)
 	if err != nil {
 		if errors.Is(err, orm.ErrNoRows) {
@@ -74,16 +54,21 @@ func (service *locationService) GetLocationImages(locationID int) ([]dtos.Locati
 	response := make([]dtos.LocationImageResponse, 0, len(locationImages))
 
 	for _, locationImage := range locationImages {
+		imageURL, err := service.storageRepository.GeneratePresignedGetObjectURL(ctx, locationImage.ImageKey)
+		if err != nil {
+			return nil, err
+		}
+
 		response = append(response, dtos.LocationImageResponse{
 			ID:       locationImage.ID,
-			ImageURL: fmt.Sprintf("/api/v1/location-images/%d", locationImage.ID),
+			ImageURL: imageURL,
 		})
 	}
 
 	return response, nil
 }
 
-func (service *locationService) GetLocations() ([]dtos.LocationResponse, error) {
+func (service *locationService) GetLocations(ctx context.Context) ([]dtos.LocationResponse, error) {
 	locations, err := service.locationRepository.GetAll()
 	if err != nil {
 		return nil, err
@@ -92,35 +77,21 @@ func (service *locationService) GetLocations() ([]dtos.LocationResponse, error) 
 	responses := make([]dtos.LocationResponse, 0)
 
 	for _, location := range locations {
+		baseImageURL, err := service.storageRepository.GeneratePresignedGetObjectURL(ctx, location.BaseImageKey)
+		if err != nil {
+			return nil, err
+		}
+
 		responses = append(responses, dtos.LocationResponse{
-			ID:      location.ID,
-			Country: location.Country,
-			State:   location.State,
-			City:    location.City,
-			BaseImageURL: fmt.Sprintf("/api/v1/locations/%d/base-image", location.ID),
+			ID:           location.ID,
+			Country:      location.Country,
+			State:        location.State,
+			City:         location.City,
+			BaseImageURL: baseImageURL,
 		})
 	}
 
 	return responses, nil
-}
-
-func (service *locationService) GetLocationImage(
-	ctx context.Context,
-	id int,
-) (*s3.GetObjectOutput, error) {
-	locationImage, err := service.locationImageRepository.GetByID(id)
-	if err != nil {
-		if errors.Is(err, orm.ErrNoRows) {
-			return nil, ErrLocationNotFound
-		}
-
-		return nil, err
-	}
-
-	return service.storageRepository.GetObject(
-		ctx,
-		locationImage.ImageKey,
-	)
 }
 
 func (service *locationService) UpdateBaseImage(
