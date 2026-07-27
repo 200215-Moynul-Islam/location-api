@@ -18,6 +18,7 @@ type LocationService interface {
 	GetBaseImage(ctx context.Context, id int) (*s3.GetObjectOutput, error)
 	GetLocationImages(locationID int) ([]dtos.LocationImageResponse, error)
 	GetLocations() ([]dtos.LocationResponse, error)
+	GetLocationImage(ctx context.Context, id int) (*s3.GetObjectOutput, error)
 }
 
 type locationService struct {
@@ -100,4 +101,23 @@ func (service *locationService) GetLocations() ([]dtos.LocationResponse, error) 
 	}
 
 	return responses, nil
+}
+
+func (service *locationService) GetLocationImage(
+	ctx context.Context,
+	id int,
+) (*s3.GetObjectOutput, error) {
+	locationImage, err := service.locationImageRepository.GetByID(id)
+	if err != nil {
+		if errors.Is(err, orm.ErrNoRows) {
+			return nil, ErrLocationNotFound
+		}
+
+		return nil, err
+	}
+
+	return service.storageRepository.GetObject(
+		ctx,
+		locationImage.ImageKey,
+	)
 }

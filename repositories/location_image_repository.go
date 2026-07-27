@@ -7,6 +7,7 @@ import (
 )
 
 type LocationImageRepository interface {
+	GetByID(id int) (*models.LocationImage, error)
 	GetByLocationID(locationID int) ([]models.LocationImage, error)
 }
 
@@ -34,4 +35,17 @@ func (repository *locationImageRepository) GetByLocationID(locationID int) ([]mo
 	}
 
 	return images, nil
+}
+
+func (repository *locationImageRepository) GetByID(id int) (*models.LocationImage, error) {
+	locationImage := &models.LocationImage{
+		ID: id,
+	}
+
+	err := repository.ormInstance.Read(locationImage)
+	if err != nil {
+		return nil, err
+	}
+
+	return locationImage, nil
 }

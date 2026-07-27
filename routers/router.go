@@ -27,6 +27,11 @@ func init() {
 			&controllers.LocationController{},
 			"get:GetLocationImages",
 		),
+		beego.NSRouter(
+			"/location-images/:id",
+			&controllers.LocationController{},
+			"get:GetLocationImage",
+		),
 	)
 
 	beego.AddNamespace(api)
