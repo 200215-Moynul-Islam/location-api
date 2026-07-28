@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"location-api/dtos"
 	"location-api/repositories"
+	"location-api/utils"
 
 	"github.com/beego/beego/v2/client/orm"
 )
@@ -54,10 +56,12 @@ func (service *locationService) GetLocationImages(ctx context.Context, locationI
 	response := make([]dtos.LocationImageResponse, 0, len(locationImages))
 
 	for _, locationImage := range locationImages {
-		imageURL, err := service.storageRepository.GeneratePresignedGetObjectURL(ctx, locationImage.ImageKey)
-		if err != nil {
-			return nil, err
-		}
+		imageURL := fmt.Sprintf(
+			"%s/%s/%s",
+			utils.GetConfig("MINIO_ENDPOINT"),
+			utils.GetConfig("MINIO_BUCKET"),
+			locationImage.ImageKey,
+		)
 
 		response = append(response, dtos.LocationImageResponse{
 			ID:       locationImage.ID,
@@ -74,13 +78,15 @@ func (service *locationService) GetLocations(ctx context.Context) ([]dtos.Locati
 		return nil, err
 	}
 
-	responses := make([]dtos.LocationResponse, 0)
+	responses := make([]dtos.LocationResponse, 0, len(locations))
 
 	for _, location := range locations {
-		baseImageURL, err := service.storageRepository.GeneratePresignedGetObjectURL(ctx, location.BaseImageKey)
-		if err != nil {
-			return nil, err
-		}
+		baseImageURL := fmt.Sprintf(
+			"%s/%s/%s",
+			utils.GetConfig("MINIO_ENDPOINT"),
+			utils.GetConfig("MINIO_BUCKET"),
+			location.BaseImageKey,
+		)
 
 		responses = append(responses, dtos.LocationResponse{
 			ID:           location.ID,

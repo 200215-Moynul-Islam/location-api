@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"time"
 
 	"location-api/utils"
 
@@ -12,10 +11,6 @@ import (
 
 type StorageRepository interface {
 	CopyObject(ctx context.Context, sourceKey string, destinationKey string) error
-	GeneratePresignedGetObjectURL(
-		ctx context.Context,
-		objectKey string,
-	) (string, error)
 }
 
 type storageRepository struct {
@@ -45,34 +40,4 @@ func (repository *storageRepository) CopyObject(
 	)
 
 	return err
-}
-
-func (repository *storageRepository) GeneratePresignedGetObjectURL(
-	ctx context.Context,
-	objectKey string,
-) (string, error) {
-	presignClient := s3.NewPresignClient(repository.client)
-
-	expiration, err := time.ParseDuration(
-		utils.GetConfig("MINIO_PRESIGNED_URL_EXPIRATION"),
-	)
-	if err != nil {
-		return "", err
-	}
-
-	presignedRequest, err := presignClient.PresignGetObject(
-		ctx,
-		&s3.GetObjectInput{
-			Bucket: &repository.bucket,
-			Key:    &objectKey,
-		},
-		func(options *s3.PresignOptions) {
-			options.Expires = expiration
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return presignedRequest.URL, nil
 }
